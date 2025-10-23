@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>{{ week.title }} - حضور بازیکن‌ها</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; font-family: sans-serif; }
+    .container { max-width: 700px; margin-top: 40px; }
+    .present { background-color: #d4edda; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="mb-3">{{ week.title }} ({{ week.week_date.strftime('%Y-%m-%d') }})</h2>
+
+    <table class="table table-bordered text-center align-middle">
+      <thead><tr><th>بازیکن</th><th>حضور</th></tr></thead>
+      <tbody>
+      {% for p in players %}
+        <tr {% if p.id in present_ids %}class="present"{% endif %}>
+          <td>{{ p.name }}</td>
+          <td>
+            <a href="/toggle_attendance/{{ week.id }}/{{ p.id }}" class="btn btn-sm {% if p.id in present_ids %}btn-success{% else %}btn-outline-secondary{% endif %}">
+              {% if p.id in present_ids %}✅ حاضر{% else %}❌ غایب{% endif %}
+            </a>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="text-center mt-3">
+      <a href="/" class="btn btn-secondary">بازگشت به هفته‌ها</a>
+    </div>
+  </div>
+</body>
+</html>

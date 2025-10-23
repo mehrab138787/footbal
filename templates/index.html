@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>🏆 برنامه دوشنبه‌های فوتسال</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 960px;
+      margin: 20px auto;
+      padding: 0 15px;
+    }
+    h1 {
+      text-align: center;
+      color: #111;
+      margin-bottom: 25px;
+      font-weight: 700;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* فیلتر ماه‌ها */
+    .month-filters {
+      text-align: center;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding-bottom: 5px;
+    }
+    .month-filter {
+      border: none;
+      border-radius: 50px;
+      padding: 6px 15px;
+      margin: 3px;
+      background: #555;
+      color: #fff;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-block;
+    }
+    .month-filter:hover, .month-filter.active {
+      background: #333;
+    }
+
+    /* کارت تاریخ */
+    .sessions-container {
+      overflow-x: auto;
+      display: flex;
+      gap: 12px;
+      padding-bottom: 12px;
+      margin-bottom: 25px;
+    }
+    .session-card {
+      flex-shrink: 0;
+      width: 120px;
+      height: 100px;
+      background: #444;
+      color: #fff;
+      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .session-card:hover {
+      transform: translateY(-4px) scale(1.07);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    }
+
+    /* جدول بدهی بازیکنان */
+    .debt-table {
+      width: 100%;
+      margin-top: 30px;
+      text-align: center;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+    }
+    .debt-table th, .debt-table td {
+      padding: 12px;
+      font-size: 1rem;
+    }
+    .debt-table th {
+      background: #f3f4f6;
+      font-weight: 700;
+    }
+    .debt-table td span {
+      font-weight: 700;
+    }
+    .player-debt {
+      color: #d63384;
+    }
+    .player-clear {
+      color: #28a745;
+    }
+
+    /* دکمه مدیریت بازیکنان */
+    .btn-players {
+      display: inline-block;
+      margin: 20px auto;
+      padding: 12px 30px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      border-radius: 50px;
+      background: #28a745;
+      color: #fff;
+      text-decoration: none;
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+      transition: all 0.3s;
+    }
+    .btn-players:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.25);
+    }
+
+    @media (max-width: 576px) {
+      .sessions-container { overflow-x: scroll; gap: 10px; }
+      .session-card { width: 100px; height: 90px; font-size: 0.85rem; }
+      .btn-players { width: 100%; text-align: center; }
+      .debt-table th, .debt-table td { font-size: 0.85rem; padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏆 برنامه دوشنبه‌های فوتسال</h1>
+
+    <!-- فیلتر ماه‌ها -->
+    <div class="month-filters">
+      <button id="show-all" class="month-filter active">همه ماه‌ها</button>
+      {% set shown_months = [] %}
+      {% for monday in mondays %}
+        {% if monday.month not in shown_months %}
+          <button class="month-filter" data-month="{{ monday.month }}">{{ PERSIAN_MONTHS[monday.month-1] }}</button>
+          {% set _ = shown_months.append(monday.month) %}
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <!-- کارت تاریخ -->
+    <div class="sessions-container" id="sessions">
+      {% for monday in mondays %}
+        <div class="session-card" data-month="{{ monday.month }}" onclick="location.href='{{ url_for('admin_attendance', date=monday.strftime('%Y-%m-%d')) }}'">
+          <div>{{ persian_number(monday.day) }}</div>
+          <div>{{ PERSIAN_MONTHS[monday.month-1] }}</div>
+          <div>{{ persian_number(monday.year) }}</div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- جدول بدهی بازیکنان -->
+    <table class="table table-bordered debt-table">
+      <thead>
+        <tr>
+          <th>ردیف</th>
+          <th>نام بازیکن</th>
+          <th>بدهی (تومان)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in players %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ p.name }}</td>
+          <td>
+            {% if p.debt > 0 %}
+              <span class="player-debt">{{ "{:,}".format(p.debt) }}</span>
+            {% else %}
+              <span class="player-clear">تسویه</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- دکمه مدیریت بازیکنان -->
+    <div class="text-center">
+      <a href="{{ url_for('admin_players') }}" class="btn-players">مدیریت بازیکن‌ها ⚽</a>
+    </div>
+  </div>
+
+  <script>
+    const monthButtons = document.querySelectorAll('.month-filter');
+    const showAllBtn = document.getElementById('show-all');
+    const sessions = document.querySelectorAll('.session-card');
+
+    monthButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const month = btn.dataset.month;
+        sessions.forEach(card => {
+          card.style.display = (!month || card.dataset.month === month) ? 'flex' : 'none';
+        });
+        monthButtons.forEach(b => b.classList.remove('active'));
+        if(btn.id !== 'show-all') btn.classList.add('active');
+      });
+    });
+
+    showAllBtn.addEventListener('click', () => {
+      sessions.forEach(card => card.style.display = 'flex');
+      monthButtons.forEach(b => b.classList.remove('active'));
+      showAllBtn.classList.add('active');
+    });
+  </script>
+</body>
+</html>
