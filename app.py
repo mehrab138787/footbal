@@ -12,7 +12,8 @@ app = Flask(__name__)
 # ------------------------------
 database_url = os.environ.get("DATABASE_URL")
 if database_url:
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    # تغییر داده شده برای استفاده از psycopg 3
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url.replace("postgresql://", "postgresql+psycopg://")
     print("✅ Connected to PostgreSQL database.")
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///futsal.db"
