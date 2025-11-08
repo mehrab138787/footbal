@@ -220,6 +220,6 @@ def healthz():
 # ------------------------------
 if __name__ == "__main__":
     with app.app_context():
-        db.create_all()
+        db.create_all()  # جدول‌ها همینجا ساخته می‌شوند
     print("🚀 App started successfully and tables checked.")
     app.run(host="0.0.0.0", port=5000, debug=True)
