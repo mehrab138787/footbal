@@ -218,9 +218,10 @@ def healthz():
 # ------------------------------
 # اجرای برنامه
 # ------------------------------
+# این بخش جدول‌ها رو حتی با Gunicorn هم میسازه
 with app.app_context():
-    db.create_all()  # ← جدول‌ها به طور خودکار روی PostgreSQL یا SQLite ساخته میشن
+    db.create_all()
+    print("🚀 App started successfully and tables checked.")
 
 if __name__ == "__main__":
-    print("🚀 App started successfully and tables checked.")
     app.run(host="0.0.0.0", port=5000, debug=True)
