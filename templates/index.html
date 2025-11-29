@@ -1,144 +1,242 @@
 <!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>🏆 برنامه دوشنبه‌های فوتسال</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet" />
+
   <style>
     body {
-      font-family: 'Vazirmatn', sans-serif;
-      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      font-family: "Vazirmatn", sans-serif;
+      background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
       margin: 0;
       padding: 0;
       min-height: 100vh;
-    }
-    .container {
-      max-width: 960px;
-      margin: 20px auto;
-      padding: 0 15px;
-    }
-    h1 {
-      text-align: center;
-      color: #111;
-      margin-bottom: 25px;
-      font-weight: 700;
-      text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+      color: #fff;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
     }
 
-    /* فیلتر ماه‌ها */
-    .month-filters {
-      text-align: center;
-      margin-bottom: 20px;
-      overflow-x: auto;
-      white-space: nowrap;
-      padding-bottom: 5px;
-    }
-    .month-filter {
-      border: none;
-      border-radius: 50px;
-      padding: 6px 15px;
-      margin: 3px;
-      background: #555;
-      color: #fff;
-      cursor: pointer;
-      transition: all 0.3s;
-      display: inline-block;
-    }
-    .month-filter:hover, .month-filter.active {
-      background: #333;
+    .container { max-width: 900px; padding: 15px; }
+
+    .pay-box {
+      backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 22px;
+      margin-top: 20px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.25);
     }
 
-    /* کارت تاریخ */
-    .sessions-container {
-      overflow-x: auto;
-      display: flex;
-      gap: 12px;
-      padding-bottom: 12px;
-      margin-bottom: 25px;
-    }
-    .session-card {
-      flex-shrink: 0;
-      width: 120px;
-      height: 100px;
-      background: #444;
-      color: #fff;
-      border-radius: 15px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
+    .pay-title {
+      font-weight: 800;
+      font-size: 1.45rem;
       text-align: center;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-      transition: transform 0.3s, box-shadow 0.3s;
-      cursor: pointer;
+      margin-bottom: 12px;
+      color: #00ffc3;
+    }
+
+    .pay-text {
+      text-align: center;
+      font-size: 1.05rem;
+      color: #d7fff7;
+      line-height: 1.8;
+      margin-bottom: 18px;
       font-weight: 600;
     }
-    .session-card:hover {
-      transform: translateY(-4px) scale(1.07);
-      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
-    }
 
-    /* جدول بدهی بازیکنان */
-    .debt-table {
-      width: 100%;
-      margin-top: 30px;
-      text-align: center;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.05);
-    }
-    .debt-table th, .debt-table td {
-      padding: 12px;
-      font-size: 1rem;
-    }
-    .debt-table th {
-      background: #f3f4f6;
-      font-weight: 700;
-    }
-    .debt-table td span {
-      font-weight: 700;
-    }
-    .player-debt {
-      color: #d63384;
-    }
-    .player-clear {
-      color: #28a745;
-    }
-
-    /* دکمه مدیریت بازیکنان */
-    .btn-players {
-      display: inline-block;
-      margin: 20px auto;
-      padding: 12px 30px;
+    .card-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.08);
+      padding: 14px 15px;
+      border-radius: 15px;
+      border: 1px solid rgba(255,255,255,0.25);
+      box-shadow: inset 0 0 12px rgba(255,255,255,0.1);
+      font-size: 1.25rem;
       font-weight: bold;
-      font-size: 1.1rem;
-      border-radius: 50px;
-      background: #28a745;
-      color: #fff;
-      text-decoration: none;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-      transition: all 0.3s;
-    }
-    .btn-players:hover {
-      transform: translateY(-3px) scale(1.05);
-      box-shadow: 0 12px 25px rgba(0,0,0,0.25);
     }
 
-    @media (max-width: 576px) {
-      .sessions-container { overflow-x: scroll; gap: 10px; }
-      .session-card { width: 100px; height: 90px; font-size: 0.85rem; }
-      .btn-players { width: 100%; text-align: center; }
-      .debt-table th, .debt-table td { font-size: 0.85rem; padding: 8px; }
+    .card-line small {
+      font-size: 0.85rem;
+      color: #c8fff0;
+      font-weight: 700;
+    }
+
+    .copy-btn {
+      cursor: pointer;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      padding: 7px 16px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      transition: 0.25s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(0,255,195,0.35);
+      color: #000;
+    }
+
+    .copied-msg {
+      text-align: center;
+      margin-top: 10px;
+      font-weight: 700;
+      color: #7effb2;
+      display: none;
+      font-size: 1.05rem;
+    }
+
+    h1 {
+      text-align: center;
+      font-weight: 900;
+      margin: 25px 0;
+      font-size: 2.1rem;
+      letter-spacing: -1px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .month-filters {
+      white-space: nowrap;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .month-filter {
+      border: none;
+      background: rgba(255,255,255,0.1);
+      padding: 10px 22px;
+      border-radius: 50px;
+      color: #fff;
+      font-weight: 700;
+      backdrop-filter: blur(6px);
+      transition: 0.25s;
+    }
+
+    .month-filter:hover,
+    .month-filter.active {
+      background: rgba(0,255,195,0.25);
+      color: #00ffc3;
+      transform: scale(1.1);
+      box-shadow: 0 6px 22px rgba(0,255,195,0.4);
+    }
+
+    .sessions-container {
+      display: flex;
+      gap: 15px;
+      overflow-x: auto;
+      padding: 15px 0;
+    }
+
+    .session-card {
+      width: 135px;
+      height: 115px;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px;
+      text-align: center;
+      padding-top: 18px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+      color: #fff;
+      transition: 0.3s;
+    }
+
+    .session-card:hover {
+      transform: translateY(-10px) scale(1.08);
+      background: rgba(0,255,195,0.22);
+      color: #000;
+      box-shadow: 0 18px 35px rgba(0,255,195,0.5);
+    }
+
+    /* جدول خاکستری/مشکی و متن سفید */
+    .debt-table {
+      margin-top: 35px;
+      border-radius: 20px;
+      overflow: hidden;
+      background-color: #1a1a1a !important; /* خاکستری تیره */
+      font-size: 0.95rem;
+    }
+
+    .debt-table th {
+      background-color: #111111 !important; /* هدر تیره‌تر */
+      color: #ffffff !important; /* متن سفید */
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-color: rgba(255,255,255,0.2) !important;
+    }
+
+    .debt-table td {
+      background-color: #1a1a1a !important; /* ردیف‌ها خاکستری تیره */
+      color: #ffffff !important; /* متن سفید */
+      border-color: rgba(255,255,255,0.2) !important;
+      padding: 12px;
+      font-size: 0.9rem;
+    }
+
+    .player-debt { color: #ff6b6b; font-weight: 800; }
+    .player-clear { color: #7effb2; font-weight: 800; }
+
+    .btn-players {
+      display: block;
+      width: 100%;
+      padding: 17px;
+      border-radius: 50px;
+      text-align: center;
+      background: rgba(0,255,195,0.15);
+      color: #000;
+      font-weight: 900;
+      margin-top: 28px;
+      text-decoration: none;
+      backdrop-filter: blur(8px);
+      transition: 0.3s;
+      box-shadow: 0 8px 25px rgba(0,255,195,0.5);
+    }
+
+    .btn-players:hover {
+      transform: scale(1.07);
+      box-shadow: 0 12px 32px rgba(0,255,195,0.6);
     }
   </style>
 </head>
 <body>
+
   <div class="container">
+
+    <div class="pay-box" id="paybox">
+      <div class="pay-title">💳 پرداخت بدهی</div>
+
+      <div class="pay-text">
+        لطفاً مبلغ موردنظر را به شماره کارت زیر واریز کنید <br>
+        و سپس رسید را در واتساپ ارسال نمایید.
+      </div>
+
+      <div class="card-line">
+        <span id="cardNumber">
+          6037701502221648<br>
+          <small>مهران عزیزی</small>
+        </span>
+        <button class="copy-btn" onclick="copyCard()">کپی</button>
+      </div>
+
+      <div id="copiedMsg" class="copied-msg">کپی شد! ✔</div>
+    </div>
+
     <h1>🏆 برنامه دوشنبه‌های فوتسال</h1>
 
-    <!-- فیلتر ماه‌ها -->
     <div class="month-filters">
       <button id="show-all" class="month-filter active">همه ماه‌ها</button>
       {% set shown_months = [] %}
@@ -150,18 +248,16 @@
       {% endfor %}
     </div>
 
-    <!-- کارت تاریخ -->
     <div class="sessions-container" id="sessions">
       {% for monday in mondays %}
-        <div class="session-card" data-month="{{ monday.month }}" onclick="location.href='{{ url_for('admin_attendance', date=monday.strftime('%Y-%m-%d')) }}'">
-          <div>{{ persian_number(monday.day) }}</div>
-          <div>{{ PERSIAN_MONTHS[monday.month-1] }}</div>
-          <div>{{ persian_number(monday.year) }}</div>
-        </div>
+      <div class="session-card" data-month="{{ monday.month }}" onclick="location.href='{{ url_for('admin_attendance', date=monday.strftime('%Y-%m-%d')) }}'">
+        <div>{{ persian_number(monday.day) }}</div>
+        <div>{{ PERSIAN_MONTHS[monday.month-1] }}</div>
+        <div>{{ persian_number(monday.year) }}</div>
+      </div>
       {% endfor %}
     </div>
 
-    <!-- جدول بدهی بازیکنان -->
     <table class="table table-bordered debt-table">
       <thead>
         <tr>
@@ -187,13 +283,29 @@
       </tbody>
     </table>
 
-    <!-- دکمه مدیریت بازیکنان -->
-    <div class="text-center">
-      <a href="{{ url_for('admin_players') }}" class="btn-players">مدیریت بازیکن‌ها ⚽</a>
-    </div>
+    <a href="{{ url_for('admin_players') }}" class="btn-players">مدیریت بازیکن‌ها ⚽</a>
+
   </div>
 
   <script>
+    async function copyCard() {
+      const cardText = document.getElementById('cardNumber').innerText.split('\n')[0].trim();
+      try {
+        await navigator.clipboard.writeText(cardText);
+      } catch {
+        const tempInput = document.createElement('input');
+        tempInput.value = cardText;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        tempInput.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+      }
+      const msg = document.getElementById("copiedMsg");
+      msg.style.display = "block";
+      setTimeout(() => { msg.style.display = "none"; }, 1500);
+    }
+
     const monthButtons = document.querySelectorAll('.month-filter');
     const showAllBtn = document.getElementById('show-all');
     const sessions = document.querySelectorAll('.session-card');
@@ -204,16 +316,17 @@
         sessions.forEach(card => {
           card.style.display = (!month || card.dataset.month === month) ? 'flex' : 'none';
         });
-        monthButtons.forEach(b => b.classList.remove('active'));
-        if(btn.id !== 'show-all') btn.classList.add('active');
+        monthButtons.forEach(b => b.classList.remove('active')); 
+        btn.classList.add('active');
       });
     });
 
     showAllBtn.addEventListener('click', () => {
       sessions.forEach(card => card.style.display = 'flex');
-      monthButtons.forEach(b => b.classList.remove('active'));
+      monthButtons.forEach(b => b.classList.remove('active')); 
       showAllBtn.classList.add('active');
     });
   </script>
+
 </body>
 </html>
