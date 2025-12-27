@@ -9,9 +9,8 @@ import requests  # برای ارتباط با تلگرام
 app = Flask(__name__)
 
 # ------------------------------
-# تنظیمات تلگرام (توکن خود را اینجا بگذارید)
+# تنظیمات تلگرام (توکن ربات شما)
 # ------------------------------
-# این توکن کلید ارتباط کد شما با سرورهای تلگرام است
 TELEGRAM_TOKEN = "8304154829:AAGonWN7iHoK36MPsdnCqAbEZg-OOu71s9g"
 
 # ------------------------------
@@ -19,6 +18,7 @@ TELEGRAM_TOKEN = "8304154829:AAGonWN7iHoK36MPsdnCqAbEZg-OOu71s9g"
 # ------------------------------
 database_url = os.environ.get("DATABASE_URL")
 if database_url:
+    # تغییر داده شده برای استفاده از psycopg 3
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url.replace("postgresql://", "postgresql+psycopg://")
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///futsal.db"
@@ -72,6 +72,7 @@ def get_report_text():
     msg = "⚽️ **وضعیت صندوق فوتسال** ⚽️\n\n"
     total_debt = 0
     for p in players:
+        # نمایش بدهی با جداکننده هزارگان
         debt_str = f"{persian_number(format(p.debt, ','))} تومان" if p.debt > 0 else "بی‌حساب ✅"
         msg += f"👤 {p.name}: {debt_str}\n"
         total_debt += p.debt
@@ -79,7 +80,9 @@ def get_report_text():
     msg += f"\n💰 **مجموع بدهی‌ها:** {persian_number(format(total_debt, ','))} تومان"
     
     now = jdatetime.datetime.now()
-    msg += f"\n📅 {persian_number(now.strftime('%Y/%m/%d %H:%M'))}"
+    # نمایش تاریخ و ساعت به شمسی
+    j_date_str = f"{persian_number(now.year)}/{persian_number(now.month)}/{persian_number(now.day)} - {persian_number(now.hour)}:{persian_number(now.minute)}"
+    msg += f"\n_تاریخ به‌روزرسانی: {j_date_str}_"
     return msg
 
 def send_telegram_msg(chat_id, text):
@@ -89,15 +92,18 @@ def send_telegram_msg(chat_id, text):
     try:
         requests.post(url, json=payload, timeout=5)
     except Exception as e:
+        # در اینجا می‌توانید خطا را به لاگ‌های سرور بفرستید
         print(f"Error sending msg to {chat_id}: {e}")
 
 def notify_all_users():
     """ارسال لیست جدید به همه کسانی که ربات را استارت کرده‌اند"""
-    text = get_report_text()
-    users = BotUser.query.all()
-    print(f"📢 Sending updates to {len(users)} users...")
-    for user in users:
-        send_telegram_msg(user.chat_id, text)
+    # باید در context برنامه Flask اجرا شود
+    with app.app_context(): 
+        text = get_report_text()
+        users = BotUser.query.all()
+        print(f"📢 Sending updates to {len(users)} users...")
+        for user in users:
+            send_telegram_msg(user.chat_id, text)
 
 # ------------------------------
 # روت وب‌هوک تلگرام (دریافت پیام از تلگرام)
@@ -105,6 +111,8 @@ def notify_all_users():
 @app.route('/bot/webhook', methods=['POST'])
 def bot_webhook():
     update = request.json
+    
+    # اطمینان از اینکه آپدیت حاوی پیام است
     if "message" in update:
         chat_id = str(update["message"]["chat"]["id"])
         text = update["message"].get("text", "")
@@ -117,19 +125,41 @@ def bot_webhook():
                 new_user = BotUser(chat_id=chat_id, first_name=first_name)
                 db.session.add(new_user)
                 db.session.commit()
+                send_telegram_msg(chat_id, f"سلام {first_name} 👋\nبه ربات فوتسال خوش آمدید.\nشما برای دریافت به‌روزرسانی‌های خودکار ثبت شدید.")
             
-            # 2. ارسال لیست فعلی بلافاصله پس از استارت
+            # 2. ارسال لیست فعلی بلافاصله پس از استارت (برای هر بار استارت)
             report = get_report_text()
-            welcome_msg = f"سلام {first_name} 👋\nبه ربات فوتسال خوش آمدید.\nشما در لیست خبررسانی ثبت شدید.\n\n" + report
-            send_telegram_msg(chat_id, welcome_msg)
+            send_telegram_msg(chat_id, report)
             
     return "OK", 200
+
+# ------------------------------
+# مسیر موقت: فقط برای ایجاد جداول جدید در دیتابیس
+# !!! شروع کد موقت (بعد از استفاده حتماً این بخش را حذف کنید) !!!
+# ------------------------------
+@app.route("/admin/init_db_only_once")
+def init_db_once():
+    # اطمینان از اینکه فقط ادمین بتواند این کار را انجام دهد
+    if not session.get("admin"):
+        return redirect(url_for("admin_login"))
+        
+    try:
+        # این خط دیتابیس را آپدیت می‌کند و جدول BotUser را می‌سازد
+        db.create_all() 
+        return "✅ جداول دیتابیس (شامل BotUser) با موفقیت ایجاد شدند! حالا شما باید *فوراً* این مسیر را از کد حذف کنید و مجدداً دیپلوی کنید.", 200
+    except Exception as e:
+        return f"❌ خطا در ایجاد جداول: {e}", 500
+# ------------------------------
+# !!! پایان کد موقت !!!
+# ------------------------------
+
 
 # ------------------------------
 # صفحه اصلی
 # ------------------------------
 @app.route("/")
 def index():
+    # منطق تولید تاریخ‌ها
     start_jdate = jdatetime.date(1404, 7, 28)
     start_date = jdatetime.datetime(start_jdate.year, start_jdate.month, start_jdate.day)
     today = jdatetime.datetime.now()
@@ -183,7 +213,7 @@ def admin_players():
     if request.method == "POST":
         action = request.form.get("action")
         player_id = request.form.get("player_id")
-        changed = False  # برای بررسی اینکه آیا تغییری رخ داده یا نه
+        changed = False
 
         if action == "add":
             name = request.form.get("name")
@@ -232,7 +262,8 @@ def admin_attendance():
         return redirect(url_for("admin_login"))
 
     players = Player.query.order_by(Player.name).all()
-    # ... (کد تقویم مشابه قبل) ...
+    
+    # منطق تولید تاریخ‌ها (تکرار شده از تابع index)
     start_jdate = jdatetime.date(1404, 7, 28)
     start_date = jdatetime.datetime(start_jdate.year, start_jdate.month, start_jdate.day)
     mondays = [start_date + timedelta(days=7 * i) for i in range(12)]
@@ -266,6 +297,7 @@ def admin_attendance():
         total_cost = request.form.get("cost")
         if total_cost and present_ids:
             total_cost = int(total_cost)
+            # رند کردن سهم به نزدیک‌ترین ۱۰۰۰ تومان بالاتر
             share = math.ceil(total_cost / len(present_ids) / 1000) * 1000
             for pid in present_ids:
                 p = Player.query.get(int(pid))
@@ -297,7 +329,8 @@ def healthz():
     return "OK", 200
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-        print("🚀 Tables created. Bot is ready.")
+    # در محیط Render، db.create_all() در زمان اجرا خودکار نیست.
+    # این کد در لوکال کار می‌کند اما در Render از مسیر موقت استفاده می‌کنیم
+    # with app.app_context():
+    #     db.create_all()
     app.run(host="0.0.0.0", port=5000, debug=True)
