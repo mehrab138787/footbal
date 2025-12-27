@@ -92,7 +92,6 @@ def send_telegram_msg(chat_id, text):
     try:
         requests.post(url, json=payload, timeout=5)
     except Exception as e:
-        # در اینجا می‌توانید خطا را به لاگ‌های سرور بفرستید
         print(f"Error sending msg to {chat_id}: {e}")
 
 def notify_all_users():
@@ -132,26 +131,6 @@ def bot_webhook():
             send_telegram_msg(chat_id, report)
             
     return "OK", 200
-
-# ------------------------------
-# مسیر موقت: فقط برای ایجاد جداول جدید در دیتابیس
-# !!! شروع کد موقت (بعد از استفاده حتماً این بخش را حذف کنید) !!!
-# ------------------------------
-@app.route("/admin/init_db_only_once")
-def init_db_once():
-    # اطمینان از اینکه فقط ادمین بتواند این کار را انجام دهد
-    if not session.get("admin"):
-        return redirect(url_for("admin_login"))
-        
-    try:
-        # این خط دیتابیس را آپدیت می‌کند و جدول BotUser را می‌سازد
-        db.create_all() 
-        return "✅ جداول دیتابیس (شامل BotUser) با موفقیت ایجاد شدند! حالا شما باید *فوراً* این مسیر را از کد حذف کنید و مجدداً دیپلوی کنید.", 200
-    except Exception as e:
-        return f"❌ خطا در ایجاد جداول: {e}", 500
-# ------------------------------
-# !!! پایان کد موقت !!!
-# ------------------------------
 
 
 # ------------------------------
@@ -329,8 +308,4 @@ def healthz():
     return "OK", 200
 
 if __name__ == "__main__":
-    # در محیط Render، db.create_all() در زمان اجرا خودکار نیست.
-    # این کد در لوکال کار می‌کند اما در Render از مسیر موقت استفاده می‌کنیم
-    # with app.app_context():
-    #     db.create_all()
     app.run(host="0.0.0.0", port=5000, debug=True)
