@@ -4,7 +4,7 @@ from datetime import timedelta
 import jdatetime
 import math
 import os
-import requests  # برای ارتباط با تلگرام
+import requests 
 
 app = Flask(__name__)
 
@@ -18,7 +18,6 @@ TELEGRAM_TOKEN = "8304154829:AAGonWN7iHoK36MPsdnCqAbEZg-OOu71s9g"
 # ------------------------------
 database_url = os.environ.get("DATABASE_URL")
 if database_url:
-    # تغییر داده شده برای استفاده از psycopg 3
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url.replace("postgresql://", "postgresql+psycopg://")
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///futsal.db"
@@ -41,7 +40,6 @@ class Attendance(db.Model):
     date = db.Column(db.String(10), nullable=False)
     player = db.relationship("Player", backref="attendances")
 
-# مدل جدید برای ذخیره کاربران تلگرام
 class BotUser(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chat_id = db.Column(db.String(50), unique=True, nullable=False)
@@ -57,88 +55,120 @@ PERSIAN_MONTHS = [
 ]
 
 def persian_number(number):
+    # این تابع فقط برای نمایش اعداد در HTML (پنل ادمین) باقی می‌ماند
     persian_digits = "۰۱۲۳۴۵۶۷۸۹"
     return "".join(persian_digits[int(d)] if d.isdigit() else d for d in str(number))
 
 # ------------------------------
-# توابع کمکی تلگرام
+# توابع کمکی تلگرام (تغییر یافته)
 # ------------------------------
 def get_report_text():
     """متن گزارش وضعیت فعلی بدهی‌ها را می‌سازد"""
     players = Player.query.order_by(Player.name).all()
-    if not players:
-        return "لیست بازیکنان خالی است."
     
-    msg = "⚽️ **وضعیت صندوق فوتسال** ⚽️\n\n"
+    # 1. بخش گزارش بدهی‌ها
+    msg = "🏆 **گزارش صندوق فوتسال** ⚽️\n\n"
     total_debt = 0
-    for p in players:
-        # نمایش بدهی با جداکننده هزارگان
-        debt_str = f"{persian_number(format(p.debt, ','))} تومان" if p.debt > 0 else "بی‌حساب ✅"
-        msg += f"👤 {p.name}: {debt_str}\n"
-        total_debt += p.debt
     
-    msg += f"\n💰 **مجموع بدهی‌ها:** {persian_number(format(total_debt, ','))} تومان"
+    if not players:
+        msg += "لیست بازیکنان خالی است."
+    else:
+        for p in players:
+            total_debt += p.debt
+            
+            # نمایش اعداد انگلیسی (طبق درخواست شما) با جداکننده هزارگان
+            debt_amount_en = format(p.debt, ',')
+            
+            if p.debt > 0:
+                # استفاده از قالب Monospace برای بدهی (زیبا و شیک)
+                debt_str = f"`{debt_amount_en} تومان`"
+            else:
+                debt_str = "بی‌حساب ✅"
+                
+            # استفاده از Bold برای نام بازیکن
+            msg += f"👤 **{p.name}:** {debt_str}\n"
+
+    # 2. بخش مجموع بدهی‌ها
+    total_debt_en = format(total_debt, ',')
+    msg += f"\n💰 **مجموع کل بدهی:** `{total_debt_en} تومان`"
     
+    # 3. بخش تاریخ و ساعت هجری شمسی (تغییرات اصلی اینجا اعمال شد)
     now = jdatetime.datetime.now()
-    # نمایش تاریخ و ساعت به شمسی
-    j_date_str = f"{persian_number(now.year)}/{persian_number(now.month)}/{persian_number(now.day)} - {persian_number(now.hour)}:{persian_number(now.minute)}"
-    msg += f"\n_تاریخ به‌روزرسانی: {j_date_str}_"
+    
+    # ساختن تاریخ و ساعت شمسی دقیق
+    j_date_str = now.strftime("%A") + " " + persian_number(now.strftime("%d %B %Y"))
+    time_str = now.strftime("%H:%M:%S")
+    
+    msg += f"\n\n🕒 **تاریخ:** {j_date_str}"
+    msg += f"\n⏳ **ساعت به‌روزرسانی:** `{time_str}`"
+    
     return msg
 
 def send_telegram_msg(chat_id, text):
     """ارسال پیام به یک کاربر خاص"""
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}
+    # Parse mode را روی MarkdownV2 تنظیم می‌کنیم چون Bold و Monospace استفاده کردیم
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "MarkdownV2"} 
     try:
+        # کاراکترهای خاص در MarkdownV2 باید Escape شوند. 
+        # چون از f-string پایتون استفاده می‌کنیم، باید backslashها را دوبار بنویسیم.
+        # فقط کاراکترهای خاصی که در متن گزارش آمده‌اند (مثل پرانتز) باید escape شوند
+        # اما چون ما از آن‌ها استفاده نکردیم، نیازی به Escape بیشتر نیست.
+        
+        # اگر در آینده کاراکترهایی مثل . - ! + = و غیره استفاده شد، باید قبل از ارسال Escape شوند.
+        # چون فعلاً از آن‌ها استفاده نکردیم، همان payload بالا کافی است.
         requests.post(url, json=payload, timeout=5)
     except Exception as e:
         print(f"Error sending msg to {chat_id}: {e}")
 
 def notify_all_users():
     """ارسال لیست جدید به همه کسانی که ربات را استارت کرده‌اند"""
-    # باید در context برنامه Flask اجرا شود
     with app.app_context(): 
-        text = get_report_text()
+        # توجه: تلگرام در MarkdownV2 به 't' برای نمایش 'toman' حساس است. 
+        # کاراکترهای خاص مانند ویرگول (,) و پرانتز () باید Escape شوند اگر در متن آزاد باشند.
+        # ما از آنها در بخش‌هایی استفاده کردیم که توسط ` (monospace) احاطه شده‌اند، 
+        # که در این حالت نیاز به Escape نیست.
+        text = get_report_text().replace('.', '\\.').replace('-', '\\-').replace('(', '\\(').replace(')', '\\)')
+        
         users = BotUser.query.all()
         print(f"📢 Sending updates to {len(users)} users...")
         for user in users:
             send_telegram_msg(user.chat_id, text)
 
 # ------------------------------
-# روت وب‌هوک تلگرام (دریافت پیام از تلگرام)
+# روت وب‌هوک تلگرام
 # ------------------------------
 @app.route('/bot/webhook', methods=['POST'])
 def bot_webhook():
     update = request.json
     
-    # اطمینان از اینکه آپدیت حاوی پیام است
     if "message" in update:
         chat_id = str(update["message"]["chat"]["id"])
         text = update["message"].get("text", "")
         first_name = update["message"]["chat"].get("first_name", "")
 
         if text == "/start":
-            # 1. ذخیره کاربر اگر جدید است
             user = BotUser.query.filter_by(chat_id=chat_id).first()
             if not user:
                 new_user = BotUser(chat_id=chat_id, first_name=first_name)
                 db.session.add(new_user)
                 db.session.commit()
-                send_telegram_msg(chat_id, f"سلام {first_name} 👋\nبه ربات فوتسال خوش آمدید.\nشما برای دریافت به‌روزرسانی‌های خودکار ثبت شدید.")
+                # پیام خوش آمدگویی
+                welcome_msg = f"سلام {first_name} 👋\nبه ربات فوتسال خوش آمدید.\nشما برای دریافت به‌روزرسانی‌های خودکار ثبت شدید."
+                send_telegram_msg(chat_id, welcome_msg)
             
-            # 2. ارسال لیست فعلی بلافاصله پس از استارت (برای هر بار استارت)
-            report = get_report_text()
+            # ارسال گزارش اصلی
+            report = get_report_text().replace('.', '\\.').replace('-', '\\-').replace('(', '\\(').replace(')', '\\)')
             send_telegram_msg(chat_id, report)
             
     return "OK", 200
 
 
 # ------------------------------
-# صفحه اصلی
+# صفحه اصلی و روت‌های ادمین
 # ------------------------------
 @app.route("/")
 def index():
-    # منطق تولید تاریخ‌ها
     start_jdate = jdatetime.date(1404, 7, 28)
     start_date = jdatetime.datetime(start_jdate.year, start_jdate.month, start_jdate.day)
     today = jdatetime.datetime.now()
@@ -158,9 +188,6 @@ def index():
         persian_number=persian_number,
     )
 
-# ------------------------------
-# ورود ادمین
-# ------------------------------
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
@@ -179,9 +206,6 @@ def admin_dashboard():
     now = jdatetime.datetime.now()
     return render_template("admin_dashboard.html", now=now)
 
-# ------------------------------
-# مدیریت بازیکنان (با ارسال پیام خودکار)
-# ------------------------------
 @app.route("/admin/players", methods=["GET", "POST"])
 def admin_players():
     if not session.get("admin"):
@@ -224,7 +248,6 @@ def admin_players():
 
         db.session.commit()
         
-        # اگر تغییری بود، به همه پیام بده
         if changed:
             notify_all_users()
 
@@ -232,9 +255,6 @@ def admin_players():
 
     return render_template("admin_players.html", players=players, persian_number=persian_number)
 
-# ------------------------------
-# ثبت حضور و تقسیم هزینه (با ارسال پیام خودکار)
-# ------------------------------
 @app.route("/admin/attendance", methods=["GET", "POST"])
 def admin_attendance():
     if not session.get("admin"):
@@ -242,7 +262,6 @@ def admin_attendance():
 
     players = Player.query.order_by(Player.name).all()
     
-    # منطق تولید تاریخ‌ها (تکرار شده از تابع index)
     start_jdate = jdatetime.date(1404, 7, 28)
     start_date = jdatetime.datetime(start_jdate.year, start_jdate.month, start_jdate.day)
     mondays = [start_date + timedelta(days=7 * i) for i in range(12)]
@@ -266,24 +285,20 @@ def admin_attendance():
         date = request.form.get("date")
         present_ids = request.form.getlist("present")
         
-        # ثبت حضور
         Attendance.query.filter_by(date=date).delete()
         for pid in present_ids:
             db.session.add(Attendance(player_id=int(pid), date=date))
         db.session.commit()
 
-        # تقسیم هزینه
         total_cost = request.form.get("cost")
         if total_cost and present_ids:
             total_cost = int(total_cost)
-            # رند کردن سهم به نزدیک‌ترین ۱۰۰۰ تومان بالاتر
             share = math.ceil(total_cost / len(present_ids) / 1000) * 1000
             for pid in present_ids:
                 p = Player.query.get(int(pid))
                 p.debt += share
             db.session.commit()
             
-            # ارسال پیام به تلگرام چون بدهی‌ها تغییر کرد
             notify_all_users()
             
         return redirect(url_for("admin_attendance", date=date))
